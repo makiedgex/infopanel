@@ -1,4 +1,5 @@
 using InfoPanel.BeadaPanel;
+using InfoPanel.CorsairPanel;
 using InfoPanel.Models;
 using InfoPanel.Services;
 using InfoPanel.TuringPanel;
@@ -635,6 +636,87 @@ public partial class UsbPanelsPage : Page
                     }
 
                     settings.ThermaltakePanelDevices.Remove(deviceConfig);
+                }
+            });
+        }
+    }
+
+    // === Corsair Panel ===
+
+    private async void ButtonDiscoverCorsairPanelDevices_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button)
+        {
+            button.IsEnabled = false;
+            await UpdateCorsairPanelDeviceList();
+            button.IsEnabled = true;
+        }
+    }
+
+    private Task UpdateCorsairPanelDeviceList()
+    {
+        var discoveredDevices = CorsairPanelHelper.ScanDevices();
+
+        Logger.Information("CorsairPanel Discovery: Found {Count} devices", discoveredDevices.Count);
+
+        foreach (var discoveredDevice in discoveredDevices)
+        {
+            ConfigModel.Instance.AccessSettings(settings =>
+            {
+                var device = settings.CorsairPanelDevices.FirstOrDefault(d =>
+                    d.IsMatching(discoveredDevice.DeviceId, discoveredDevice.DeviceLocation, discoveredDevice.Model));
+
+                if (device == null)
+                {
+                    var newDevice = new CorsairPanelDevice()
+                    {
+                        DeviceId = discoveredDevice.DeviceId,
+                        DeviceLocation = discoveredDevice.DeviceLocation,
+                        Model = discoveredDevice.Model,
+                        ProfileGuid = ConfigModel.Instance.Profiles.FirstOrDefault()?.Guid ?? Guid.Empty
+                    };
+
+                    if (discoveredDevice.ModelInfo != null)
+                    {
+                        newDevice.RuntimeProperties.Name = discoveredDevice.ModelInfo.Name;
+                    }
+
+                    settings.CorsairPanelDevices.Add(newDevice);
+                    Logger.Information("CorsairPanel Discovery: Added new device '{DeviceId}'", discoveredDevice.DeviceId);
+                }
+                else
+                {
+                    device.DeviceLocation = discoveredDevice.DeviceLocation;
+
+                    if (device.ModelInfo != null)
+                    {
+                        device.RuntimeProperties.Name = device.ModelInfo.Name;
+                    }
+
+                    Logger.Information("CorsairPanel Discovery: Device '{DeviceId}' already exists", discoveredDevice.DeviceId);
+                }
+            });
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private void ButtonRemoveCorsairPanelDevice_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.Tag is CorsairPanelDevice runtimeDevice)
+        {
+            ConfigModel.Instance.AccessSettings(settings =>
+            {
+                var deviceConfig = settings.CorsairPanelDevices.FirstOrDefault(c => c.Id == runtimeDevice.Id);
+
+                if (deviceConfig != null)
+                {
+                    if (CorsairPanelTask.Instance.IsDeviceRunning(deviceConfig.Id))
+                    {
+                        _ = CorsairPanelTask.Instance.StopDevice(deviceConfig.Id);
+                    }
+
+                    settings.CorsairPanelDevices.Remove(deviceConfig);
                 }
             });
         }

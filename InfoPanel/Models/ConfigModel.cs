@@ -502,6 +502,17 @@ namespace InfoPanel
                     await ThermaltakePanelTask.Instance.StopAsync();
                 }
             }
+            else if (e.PropertyName == nameof(Settings.CorsairPanelMultiDeviceMode))
+            {
+                if (Settings.CorsairPanelMultiDeviceMode)
+                {
+                    await CorsairPanelTask.Instance.StartAsync();
+                }
+                else
+                {
+                    await CorsairPanelTask.Instance.StopAsync();
+                }
+            }
 
             await SaveSettingsAsync();
         }
@@ -711,6 +722,15 @@ namespace InfoPanel
                             foreach (var device in settings.ThermaltakePanelDevices)
                             {
                                 Settings.ThermaltakePanelDevices.Add(device);
+                            }
+
+                            // Load Corsair panel settings
+                            Settings.CorsairPanelMultiDeviceMode = settings.CorsairPanelMultiDeviceMode;
+
+                            Settings.CorsairPanelDevices.Clear();
+                            foreach (var device in settings.CorsairPanelDevices)
+                            {
+                                Settings.CorsairPanelDevices.Add(device);
                             }
 
                             // Load hotkey bindings

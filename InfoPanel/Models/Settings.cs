@@ -93,6 +93,16 @@ namespace InfoPanel.Models
         [ObservableProperty]
         private bool _thermaltakePanelMultiDeviceMode = false;
 
+        private readonly ObservableCollection<CorsairPanelDevice> _corsairPanelDevices = [];
+
+        public ObservableCollection<CorsairPanelDevice> CorsairPanelDevices
+        {
+            get { return _corsairPanelDevices; }
+        }
+
+        [ObservableProperty]
+        private bool _corsairPanelMultiDeviceMode = false;
+
         private readonly ObservableCollection<HotkeyBinding> _hotkeyBindings = [];
 
         public ObservableCollection<HotkeyBinding> HotkeyBindings
@@ -140,6 +150,7 @@ namespace InfoPanel.Models
             TuringPanelDevices.CollectionChanged += TuringPanelDevices_CollectionChanged;
             ThermalrightPanelDevices.CollectionChanged += ThermalrightPanelDevices_CollectionChanged;
             ThermaltakePanelDevices.CollectionChanged += ThermaltakePanelDevices_CollectionChanged;
+            CorsairPanelDevices.CollectionChanged += CorsairPanelDevices_CollectionChanged;
         }
 
         private void BeadaPanelDevices_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -232,6 +243,27 @@ namespace InfoPanel.Models
         {
             if (e.PropertyName != nameof(ThermaltakePanelDevice.RuntimeProperties))
                 OnPropertyChanged(nameof(ThermaltakePanelDevices));
+        }
+
+        private void CorsairPanelDevices_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            if (e.OldItems != null)
+            {
+                foreach (CorsairPanelDevice device in e.OldItems)
+                    device.PropertyChanged -= CorsairDevice_PropertyChanged;
+            }
+            if (e.NewItems != null)
+            {
+                foreach (CorsairPanelDevice device in e.NewItems)
+                    device.PropertyChanged += CorsairDevice_PropertyChanged;
+            }
+            OnPropertyChanged(nameof(CorsairPanelDevices));
+        }
+
+        private void CorsairDevice_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName != nameof(CorsairPanelDevice.RuntimeProperties))
+                OnPropertyChanged(nameof(CorsairPanelDevices));
         }
 
     }
